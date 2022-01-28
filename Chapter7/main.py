@@ -3,12 +3,16 @@ import os
 import sys
 import zlib
 import StringIO
+import scanmod
+import curemod
 
 #virus.db file -> VirusDB[](LoadVirusDB)
 VirusDB = []
 #VirusDB -> vdb, vsize(MakeVirusDB)
 vdb = []
 vsize = []
+#ScanStr DB
+sdb = []
 
 def DecodeKMD(fname):
     try:
@@ -47,27 +51,26 @@ def LoadVirusDB():
         line = line.strip()
         VirusDB.append(line)
     fp.close()
-    
+
 def MakeVirusDB():
     for pattern in VirusDB:
         t = []
         v = pattern.split(':')
-        t.append(v[1])
-        t.append(v[2])
-        vdb.append(t)
+        scan_func = v[0]
+        cure_func = v[1]
+        if scan_func == 'ScanMD5':
+            t.append(v[3])
+            t.append(v[4])
+            vdb.append(t)
         
-        size = int(v[0])
-        if vsize.count(size) == 0: #already exist?
-            vsize.append(size)
-
-#check virus pattern
-def SearchVDB(fmd5):
-    for t in vdb:
-        if t[0] == fmd5: #same md5 hash?
-            return True, t[1] #return virus pattern
-
-    return False, "" #no virus
-    
+            size = int(v[2])
+            if vsize.count(size) == 0: #already exist?
+                vsize.append(size)
+        elif scan_func == 'ScanStr':
+            t.append(int(v[2]))
+            t.append(v[3])
+            t.append(v[4])
+            sdb.append(t)
 
 if __name__=='__main__':
     LoadVirusDB()
@@ -76,25 +79,14 @@ if __name__=='__main__':
     #use command line
     if len(sys.argv) !=2:
         print "Usage : main.py [file]"
+        exit(0)
     
     fname = sys.argv[1] #[virus file]
     
-    size = os.path.getsize(fname)
-    if vsize.count(size):
-        fp = open(fname, 'rb')
-        buf = fp.read()
-        fp.close()
-        
-        m = hashlib.md5()
-        m.update(buf)
-        fmd5 = m.hexdigest()
-        
-        #check virus pattern
-        ret, vname = SearchVDB(fmd5)
-        if ret:
-            print "%s : %s" %(fname, vname) #"filename : virusName"
-            #os.remove(fname)
-        else:
-            print "%s : not Virus" %(fname)
+    ret, vname = scanmod.ScanVirus(vdb, vsize, sdb, fname)
+    if ret == True:
+        print "%s : %s" %(fname, vname)
+        #curemod.CureDelete(fname)
+        print 'Cure Complete'
     else:
-        print "%s : not Virus" %(fname)
+        print "%s : Not Virus" %(fname)
