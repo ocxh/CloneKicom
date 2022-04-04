@@ -1,0 +1,20 @@
+file_scan_list = [] #검사 결과 대상 정보
+
+s_count = 1 #Script개수
+i_count = 1 #iframe 개수
+p_count = 1 #php 개수
+
+for obj in p_script.finditer(buf):
+	t = obj.group()
+	p = t.lower()
+	
+	if p.find('<script') != -1:
+		file_scan_list.append(['arc_html','HTML/Script #%d' %s_count])
+	elif p.find('<iframe') != -1:
+		file_scan_list.append(['arc_html', 'HTML\IFrame #%d' % i_count])
+		i_count += 1
+	elif p.find('<?') != -1:
+		file_scan_list.append(['arc_html', 'HTML/PHP #%d' %p_count])
+		p_count += 1
+
+result = file_scan_list
